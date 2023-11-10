@@ -1,0 +1,14 @@
+steps:
+  - name: gcr.io/cloud-builders/git
+    args: ['clone', '-b', '${BRANCH_NAME}', '--single-branch', 'https://${_GIT_USER_}:${_GIT_TOKEN_}@github.com/${_GIT_ORG_}/${REPO_NAME}.git']
+
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '--build-arg', 'PROJECT_ID=${PROJECT_ID}', '--build-arg', 'GITHUB_TOKEN=${_GIT_TOKEN_}', '-t', 'gcr.io/${PROJECT_ID}/${REPO_NAME}:${BRANCH_NAME}', '--file=Dockerfile', '.']
+
+  - name: gcr.io/cloud-builders/docker
+    args: ['push', 'gcr.io/${PROJECT_ID}/${REPO_NAME}:${BRANCH_NAME}']
+
+  - name: gcr.io/cloud-builders/gcloud
+    args: ['compute', 'ssh', '$_SERVER', '--zone', '$_ZONE', '--command', '${_HELM_DIR_} && ${_HELM_COMMAND_} --kubeconfig=${_KUBE_CONFIG_}','--quiet']
+
+timeout: 1500s

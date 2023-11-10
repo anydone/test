@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+<configuration>
+  <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5p %.30c - %m - debug=%X{fields.debugId}%n</pattern>
+    </encoder>
+  </appender>
+  <logger name="com.oyster" additivity="false" level="TRACE">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="org.springframework" additivity="false" level="INFO">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="com.zaxxer.hikari" additivity="false" level="INFO">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="org.springframework.transaction" additivity="false" level="DEBUG">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="org.springframework.http.client.support.HttpAccessor" additivity="false" level="INFO">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="org.springframework.web.client.RestTemplate" additivity="false" level="INFO">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="org.springframework.orm" additivity="false" level="INFO">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="org.hibernate" additivity="false" level="INFO">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="org.hibernate.hql.internal.ast.QueryTranslatorImpl" additivity="false" level="INFO">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="org.hibernate.query.criteria.internal.CriteriaQueryImpl" additivity="false" level="DEBUG">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="org.hibernate.resource.jdbc.internal.ResourceRegistryStandardImpl" additivity="false" level="INFO">
+    <appender-ref ref="console"/>
+  </logger>
+  <logger name="org.hibernate.SQL" additivity="false" level="INFO">
+	<appender-ref ref="console"/>
+  </logger>
+  <logger name="org.hibernate.type.descriptor.sql.BasicBinder" additivity="false" level="INFO">
+	<appender-ref ref="console"/>
+  </logger>
+  <logger name="com.amazonaws.auth" additivity="false" level="INFO">
+	<appender-ref ref="console"/>
+  </logger>
+  <logger name="org.springframework.test.context.jdbc" additivity="false" level="TRACE">
+	<appender-ref ref="console"/>
+  </logger>
+
+  <root level="WARN">
+    <appender-ref ref="console"/>
+  </root>
+</configuration>

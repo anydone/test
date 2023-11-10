@@ -1,0 +1,10 @@
+steps:
+
+  - name: gcr.io/cloud-builders/git
+    args: ['clone', '-b', '${TAG_NAME}', '--single-branch', 'https://${_GIT_USER_}:${_GIT_TOKEN_}@github.com/${_GIT_ORG_}/${REPO_NAME}.git']
+
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '--build-arg', 'PROJECT_ID=${PROJECT_ID}', '--build-arg', 'GITHUB_TOKEN=${_GIT_TOKEN_}', '-t', 'gcr.io/${PROJECT_ID}/${REPO_NAME}:${TAG_NAME}', '--file=Dockerfile', '.']
+
+  - name: gcr.io/cloud-builders/docker
+    args: ['push', 'gcr.io/${PROJECT_ID}/${REPO_NAME}:${TAG_NAME}']

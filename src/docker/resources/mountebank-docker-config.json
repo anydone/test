@@ -1,0 +1,39 @@
+{
+	"Image": "mountebank-payments:latest",
+	"Env": [
+	],
+	"Cmd":[
+		"--configfile", "/imposters/imposters.js", "--loglevel", "debug"
+	],
+	"ExposedPorts": {
+		"2525/tcp": {},
+		"2526/tcp": {}
+	},
+	"Healthcheck": {
+		"Test": [ "CMD", "nc", "-z", "localhost", "2525"],
+		"Interval": 1000000000,
+		"Timeout": 15000000000,
+		"Retries": 5,
+		"StartPeriod": 1000000000
+	},
+	"Volumes":{
+		"/imposters": {}
+	},
+	"HostConfig": {
+		"PortBindings": {
+			"2525/tcp": [
+				{
+					"HostPort": "6405"
+				}
+			],
+			"2526/tcp": [
+				{
+					"HostPort": "6406"
+				}
+			]
+		},
+		"Binds": [ 
+			"${pwd}/src/docker/resources/imposters:/imposters"
+		]
+	}
+}

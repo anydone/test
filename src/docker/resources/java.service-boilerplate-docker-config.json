@@ -1,0 +1,24 @@
+{
+	"Image": "java.service-boilerplate:latest",
+	"Env": [
+	],
+	"ExposedPorts": {
+		"9090/tpc": {}
+	},
+	"Healthcheck": {
+		"Test": [ "CMD", "nc", "-z", "localhost", "9090"],
+		"Interval": 1000000000,
+		"Timeout": 20000000000,
+		"Retries": 5,
+		"StartPeriod": 1000000000
+	},
+	"HostConfig": {
+		"PortBindings": {
+			"9090/tcp": [
+				{
+					"HostPort": "6003"
+				}
+			]
+		}
+	}
+}

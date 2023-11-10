@@ -1,0 +1,201 @@
+plugins {
+        id 'org.springframework.boot' version '2.6.2'
+        id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+        id 'maven-publish'
+        id 'java-library'
+        id 'jacoco'
+		id "org.sonarqube" version "3.1.1"
+}
+
+group = 'com.treeleaf.payment'
+version "${version != 'unspecified' ? version : '0.0.0'}"
+sourceCompatibility = '11'
+
+ext {
+    springBootVersion = "2.5.4"
+}
+
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    maven {
+        name = 'GitHubPackages-protos'
+        url = 'https://maven.pkg.github.com/treeleaftech/proto.boilerplate'
+        credentials(){
+            username = '_'
+            password = project.findProperty("gpr.key") ?: System.getenv('GIT_TOKEN')
+        }
+    }
+    maven {
+        name = 'GitHubPackages-java-service'
+        url = 'https://maven.pkg.github.com/treeleaftech/treeleaf_java_service'
+        credentials(){
+            username = '_'
+            password = System.getenv('GIT_TOKEN')
+        }
+    }
+    maven {
+      name = 'GitHubPackages'
+      url = 'https://maven.pkg.github.com/treeleaftech/logback-elasticsearch-appender'
+      credentials(){
+        username = '_'
+        password = project.findProperty("gpr.key") ?: System.getenv('GIT_TOKEN')
+      }
+    }
+}
+
+dependencies {
+    implementation group:'org.springframework.boot', name:'spring-boot-starter', version: "$springBootVersion"
+    implementation group:'org.springframework.boot', name:'spring-boot-starter-validation', version: "$springBootVersion"
+
+    annotationProcessor group:'org.springframework.boot', name:'spring-boot-configuration-processor', version: "$springBootVersion"
+	implementation group: 'javax.validation', name:'validation-api', version:'2.0.1.Final'
+
+    implementation group: 'com.treeleaf.service', name: 'service', version: 'v2.41.0'
+    implementation group: 'com.treeleaf.protos', name: 'proto.boilerplate', version: 'v0.4.0'
+    implementation group: 'com.treeleaf', name: 'logback-elasticsearch-appender', version: 'v0.18.0'
+
+    testImplementation group:'org.junit.platform', name: 'junit-platform-launcher', version: '1.8.2'
+	testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion") {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
+    testImplementation group: 'org.mock-server', name: 'mockserver-junit-jupiter', version: '5.11.1'
+    testImplementation 'com.tngtech.archunit:archunit:0.22.0'
+}
+
+jar {
+    enabled = false
+}
+
+sourceSets {
+    integrationTest {
+        java.srcDir file('src/integTest/java')
+        resources.srcDir file('src/integTest/resources')
+
+        compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    integrationTestCompile.extendsFrom testImplementation
+    integrationTestRuntime.extendsFrom testRuntimeOnly
+    [apiElements, runtimeElements].each {
+        it.outgoing.artifacts.removeIf { it.buildDependencies.getDependencies(null).contains(jar) }
+        it.outgoing.artifact(bootJar)
+    }
+}
+
+task beforeIntegrationTest(type: Exec, group: "docker", description: "Start up container dependencies for Integration Test Task") {
+    ignoreExitValue=true
+    executable "src/docker/scripts/./run-container-dependencies.sh"
+}
+
+task afterIntegrationTest(type: Exec, group: "docker", description: "Stop and Remove containers dependencies for Integration Test Task") {
+    ignoreExitValue=true
+    commandLine "src/docker/scripts/./stop-container-dependencies.sh"
+}
+
+task integrationTest(type: Test) {
+    useJUnitPlatform()
+    description = 'Runs the integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+
+    testLogging.showStandardStreams = true
+    maxParallelForks = 1
+
+    dependsOn beforeIntegrationTest
+    finalizedBy afterIntegrationTest
+
+}
+
+task completeTest(type: Test, dependsOn: ["test", "integrationTest", "jacocoTestReport"]){
+    useJUnitPlatform()
+    description = 'Runs the unit and integration tests.'
+    jacocoTestReport.mustRunAfter integrationTest
+    integrationTest.mustRunAfter test
+}
+
+task runService(type: Exec, description: "Creates and run the docker image", group: "docker") {
+    commandLine "src/docker/scripts/build-run-service-container.sh"
+}
+
+task stopService(type: Exec, description: "Creates and run the docker image", group: "docker") {
+    commandLine "src/docker/scripts/stop-container-dependencies.sh"
+}
+
+test {
+    useJUnitPlatform()
+    testLogging.showStandardStreams = true
+}
+
+publishing {
+  repositories {
+    maven {
+      name = 'GitHubPackages'
+      url = 'https://maven.pkg.github.com/treeleaftech/java.service-boilerplate'
+      credentials(){
+        username = '_'
+        password = project.findProperty("gpr.key") ?: System.getenv('GIT_TOKEN')
+      }
+    }
+  }
+  publications {
+     javaServiceBoilerplate(MavenPublication) {
+         from(components.java)
+    }
+  }
+}
+
+
+jacocoTestReport {
+    executionData files("$buildDir/jacoco/integrationTest.exec")
+    reports{
+        xml.enabled true
+    }
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: ['com/treeleaf/paymentd/domain/**',
+                                        'com/treeleaf/payment/exception/**',
+                                        '**Test',
+                                        '**IT'])
+        }))
+    }
+}
+
+jacoco {
+    toolVersion = '0.8.6'
+}
+
+sonarqube {
+    properties {
+        property 'sonar.exclusions', ['src/main/java/com/treeleaf/payment/domain/**',
+                                      'src/main/java/com/treeleaf/payment/exception/**',
+                                      'src/main/java/com/treeleaf/payment/Application.java',
+                                      'src/main/java/com/treeleaf/payment/*Main.java']
+        property 'sonar.coverage.jacoco.xmlReportPaths', "${project.buildDir}/reports/jacoco/test/jacocoTestReport.xml"
+        property 'sonar.core.codeCoveragePlugin', 'jacoco'
+        property 'sonar.java.coveragePlugin', 'jacoco'
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            excludes = ['*Test',
+                        '*IT',
+                        'src/main/java/com/treeleaf/payment/domain/**',
+                        'src/main/java/com/treeleaf/payment/exception/**']
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.8
+            }
+        }
+    }
+}
+
